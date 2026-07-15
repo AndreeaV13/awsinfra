@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Site static pe S3, livrat prin CloudFront (bucket privat + Origin Access Control).
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: primul-meu-site
+    Description: Nume folosit ca prefix pentru resurse.
+
+Resources:
+
+  # Bucket-ul S3 unde stau fisierele site-ului. Este PRIVAT - nimeni nu poate
+  # accesa direct fisierele din el, doar CloudFront (prin OAC de mai jos).
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Origin Access Control: mecanismul modern prin care CloudFront se
+  # autentifica in fata S3, fara sa fie nevoie ca bucket-ul sa fie public.
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${ProjectName}-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Politica bucket-ului: permite explicit doar serviciului CloudFront,
+  # si doar pentru DISTRIBUTIA noastra specifica, sa citeasca obiectele.
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${SiteBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
+
+  # Distributia CloudFront: CDN-ul care serveste site-ul global, cu HTTPS
+  # automat prin certificatul default *.cloudfront.net.
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt CloudFrontOAC.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized (policy gestionata de AWS)
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /error.html
+
+Outputs:
+  BucketName:
+    Description: Numele bucket-ului S3
+    Value: !Ref SiteBucket
+
+  DistributionId:
+    Description: ID-ul distributiei CloudFront (necesar pentru invalidari de cache)
+    Value: !Ref CloudFrontDistribution
+
+  SiteURL:
+    Description: URL-ul public al site-ului
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
