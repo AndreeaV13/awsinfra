@@ -56,6 +56,19 @@ Resources:
       Tags:
       - Key: stack
         Value: production
+
+  myInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: stack
+        Value: production
+
+  myVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref myVPC
+      InternetGatewayId: !Ref myInternetGateway
   # Bucket-ul S3 unde stau fisierele site-ului. Este PRIVAT - nimeni nu poate
   # accesa direct fisierele din el, doar CloudFront (prin OAC de mai jos).
   SiteBucket:
