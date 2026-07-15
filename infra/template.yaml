@@ -69,6 +69,41 @@ Resources:
     Properties:
       VpcId: !Ref myVPC
       InternetGatewayId: !Ref myInternetGateway
+
+  myRoute:
+  Type: AWS::EC2::Route
+  DependsOn: myVPCGatewayAttachment
+  Properties:
+    RouteTableId:
+      Ref: myRouteTable
+    DestinationCidrBlock: 0.0.0.0/0
+    GatewayId:
+      Ref: myInternetGateway
+
+
+  mySubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: mySubnet1
+      RouteTableId:
+        Ref: myRouteTable
+
+  mySubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: mySubnet2
+      RouteTableId:
+        Ref: myRouteTable
+
+  mySubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: mySubnet3
+      RouteTableId:
+        Ref: myRouteTable
   # Bucket-ul S3 unde stau fisierele site-ului. Este PRIVAT - nimeni nu poate
   # accesa direct fisierele din el, doar CloudFront (prin OAC de mai jos).
   SiteBucket:
