@@ -31,6 +31,7 @@ jobs:
             --template-file infra/template.yaml \
             --stack-name ${{ env.STACK_NAME }} \
             --parameter-overrides ProjectName=primul-meu-site \
+            --tags Project=primul-meu-site Environment=production Owner=Andreea ManagedBy=CloudFormation \
             --region ${{ env.AWS_REGION }}
 
       - name: Sync site files to S3
