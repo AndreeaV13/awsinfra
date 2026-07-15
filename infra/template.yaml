@@ -7,12 +7,18 @@ Parameters:
     Type: String
     Default: primul-meu-site
     Description: Nume folosit ca prefix pentru resurse.
+ 
+  VPCcidr:
+    Description: "vpc"
+    Type: String
+    Default: "10.0.0.0/16"
+
 
 Resources:
   myVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/26
+      CidrBlock: !Ref VPCcidr
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
@@ -20,6 +26,36 @@ Resources:
          Value: first-vpc
        - Key: env
          Value: production
+
+  mySubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: !Select [0, !Cidr [!GetAtt myVPC.CidrBlock, 3, 4]]
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+      - Key: stack
+        Value: production
+
+  mySubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: !Select [1, !Cidr [!GetAtt myVPC.CidrBlock, 3, 4]]
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+      - Key: stack
+        Value: production
+
+  mySubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: !Select [2, !Cidr [!GetAtt myVPC.CidrBlock, 3, 4]]
+      AvailabilityZone: !Select [2, !GetAZs '']
+      Tags:
+      - Key: stack
+        Value: production
   # Bucket-ul S3 unde stau fisierele site-ului. Este PRIVAT - nimeni nu poate
   # accesa direct fisierele din el, doar CloudFront (prin OAC de mai jos).
   SiteBucket:
