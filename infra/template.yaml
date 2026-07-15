@@ -13,6 +13,11 @@ Parameters:
     Type: String
     Default: "10.1.0.0/26"
 
+  LatestAmiId:
+    Description: "AMI Amazon Linux 2023 cel mai recent, pentru regiunea in care ruleaza stack-ul"
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
 
 Resources:
   myVPC:
@@ -134,12 +139,8 @@ Resources:
   Ec2Instance: 
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: t2.micro 
-      ImageId: 
-        Fn::FindInMap: 
-          - "RegionMap"
-          - Ref: "AWS::Region"
-          - "AMI"
+      InstanceType: t2.micro
+      ImageId: !Ref LatestAmiId
       KeyName: "frankfurt"
       NetworkInterfaces: 
         - AssociatePublicIpAddress: "true"
