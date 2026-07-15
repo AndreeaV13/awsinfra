@@ -129,7 +129,7 @@ Resources:
           ToPort: -1
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: -1
+          FromPort: 22
           ToPort: 22
           CidrIp: 81.196.21.110/32
       SecurityGroupEgress:
