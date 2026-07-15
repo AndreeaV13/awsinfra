@@ -12,6 +12,7 @@ env:
   AWS_REGION: eu-central-1
   STACK_NAME: primul-meu-site
   BUCKET_NAME: primul-meu-site-616077259946-eu-central-1
+  PROJECT_NAME: primul-meu-site
 
 jobs:
   deploy:
@@ -25,13 +26,22 @@ jobs:
           role-to-assume: arn:aws:iam::616077259946:role/github-actions-awsinfra-deploy
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Determine environment tag from branch
+        id: envtag
+        run: |
+          if [ "${{ github.ref_name }}" = "master" ]; then
+            echo "environment=production" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=staging" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
             --template-file infra/template.yaml \
             --stack-name ${{ env.STACK_NAME }} \
-            --parameter-overrides ProjectName=primul-meu-site \
-            --tags Project=primul-meu-site Environment=production Owner=Andreea ManagedBy=CloudFormation \
+            --parameter-overrides ProjectName=${{ env.PROJECT_NAME }} \
+            --tags Project=${{ env.PROJECT_NAME }} Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} ManagedBy=CloudFormation \
             --region ${{ env.AWS_REGION }}
 
       - name: Sync site files to S3
