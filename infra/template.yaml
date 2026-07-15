@@ -128,7 +128,7 @@ Resources:
           ToPort: 22
           CidrIp: 81.196.21.110/32
       SecurityGroupEgress:
-        - IpProtocol: -
+        - IpProtocol: -1
           CidrIp: 0.0.0.0/0
 
   Ec2Instance: 
