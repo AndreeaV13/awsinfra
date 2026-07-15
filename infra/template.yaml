@@ -112,6 +112,43 @@ Resources:
         Ref: mySubnet3
       RouteTableId:
         Ref: myRouteTable
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId: !Ref myVPC
+      SecurityGroupIngress:
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: -1
+          ToPort: 22
+          CidrIp: 81.196.21.110/32
+      SecurityGroupEgress:
+        - IpProtocol: -
+          CidrIp: 0.0.0.0/0
+
+  Ec2Instance: 
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: 
+        Fn::FindInMap: 
+          - "RegionMap"
+          - Ref: "AWS::Region"
+          - "AMI"
+      KeyName: "frankfurt"
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "InstanceSecurityGroup"
+          SubnetId: 
+            Ref: "mySubnet3"
+
+
   # Bucket-ul S3 unde stau fisierele site-ului. Este PRIVAT - nimeni nu poate
   # accesa direct fisierele din el, doar CloudFront (prin OAC de mai jos).
   SiteBucket:
