@@ -133,7 +133,8 @@ Resources:
 
   Ec2Instance: 
     Type: AWS::EC2::Instance
-    Properties: 
+    Properties:
+      InstanceType: t2.micro 
       ImageId: 
         Fn::FindInMap: 
           - "RegionMap"
