@@ -1,0 +1,45 @@
+name: Deploy site
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  id-token: write   # necesar pentru OIDC (fara chei permanente)
+  contents: read
+
+env:
+  AWS_REGION: eu-central-1
+  STACK_NAME: primul-meu-site
+  BUCKET_NAME: primul-meu-site-616077259946-eu-central-1
+  DISTRIBUTION_ID: E1UOS2NB00X5N6
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::616077259946:role/github-actions-awsinfra-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/template.yaml \
+            --stack-name ${{ env.STACK_NAME }} \
+            --parameter-overrides ProjectName=primul-meu-site \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Sync site files to S3
+        run: |
+          aws s3 sync site/ s3://${{ env.BUCKET_NAME }}/ --delete --region ${{ env.AWS_REGION }}
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.DISTRIBUTION_ID }} \
+            --paths "/*"
