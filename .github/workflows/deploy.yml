@@ -12,7 +12,6 @@ env:
   AWS_REGION: eu-central-1
   STACK_NAME: primul-meu-site
   BUCKET_NAME: primul-meu-site-616077259946-eu-central-1
-  DISTRIBUTION_ID: E1UOS2NB00X5N6
 
 jobs:
   deploy:
@@ -40,6 +39,11 @@ jobs:
 
       - name: Invalidate CloudFront cache
         run: |
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+            --output text)
           aws cloudfront create-invalidation \
-            --distribution-id ${{ env.DISTRIBUTION_ID }} \
+            --distribution-id "$DISTRIBUTION_ID" \
             --paths "/*"

@@ -13,12 +13,12 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/26
-      EnableDnsSupport: 'true'
-      EnableDnsHostnames: 'true'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
       Tags:
        - Key: name
          Value: first-vpc
-       - key: env
+       - Key: env
          Value: production
   # Bucket-ul S3 unde stau fisierele site-ului. Este PRIVAT - nimeni nu poate
   # accesa direct fisierele din el, doar CloudFront (prin OAC de mai jos).
