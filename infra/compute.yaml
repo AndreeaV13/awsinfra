@@ -31,6 +31,9 @@ Resources:
       InstanceType: t3.micro
       ImageId: !Ref LatestAmiId
       KeyName: "frankfurt"
+      Tags:
+        - Key: Name
+          Value: first-ec2-instance
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"

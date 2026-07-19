@@ -15,7 +15,7 @@ Resources:
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
-        - Key: name
+        - Key: Name
           Value: first-vpc
         - Key: env
           Value: production
