@@ -5,14 +5,13 @@ on:
     branches: [master]
 
 permissions:
-  id-token: write   # necesar pentru OIDC (fara chei permanente)
+  id-token: write
   contents: read
 
 env:
   AWS_REGION: eu-central-1
-  STACK_NAME: primul-meu-site
-  BUCKET_NAME: primul-meu-site-616077259946-eu-central-1
   PROJECT_NAME: primul-meu-site
+  BUCKET_NAME: primul-meu-site-616077259946-eu-central-1
 
 jobs:
   deploy:
@@ -26,7 +25,7 @@ jobs:
           role-to-assume: arn:aws:iam::616077259946:role/github-actions-awsinfra-deploy
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Determine environment tag from branch
+      - name: Determine environment tag
         id: envtag
         run: |
           if [ "${{ github.ref_name }}" = "master" ]; then
@@ -35,23 +34,44 @@ jobs:
             echo "environment=staging" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Deploy CloudFormation stack
+      # STACK 1: Reteaua (VPC, subnet-uri, gateway, rutare)
+      - name: Deploy network stack
         run: |
           aws cloudformation deploy \
-            --template-file infra/template.yaml \
-            --stack-name ${{ env.STACK_NAME }} \
-            --parameter-overrides ProjectName=${{ env.PROJECT_NAME }} \
-            --tags Project=${{ env.PROJECT_NAME }} Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} ManagedBy=CloudFormation \
+            --template-file infra/network.yaml \
+            --stack-name network-stack \
+            --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
             --region ${{ env.AWS_REGION }}
 
+      # STACK 2: Serverul (security group, EC2)
+      - name: Deploy compute stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/compute.yaml \
+            --stack-name compute-stack \
+            --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
+            --region ${{ env.AWS_REGION }}
+
+      # STACK 3: Site-ul static (S3, CloudFront)
+      - name: Deploy site stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/site.yaml \
+            --stack-name site-stack \
+            --parameter-overrides ProjectName=${{ env.PROJECT_NAME }} \
+            --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
+            --region ${{ env.AWS_REGION }}
+
+      # Sincronizeaza fisierele site-ului
       - name: Sync site files to S3
         run: |
           aws s3 sync site/ s3://${{ env.BUCKET_NAME }}/ --delete --region ${{ env.AWS_REGION }}
 
+      # Goleste cache-ul CloudFront
       - name: Invalidate CloudFront cache
         run: |
           DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.STACK_NAME }} \
+            --stack-name site-stack \
             --region ${{ env.AWS_REGION }} \
             --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
             --output text)

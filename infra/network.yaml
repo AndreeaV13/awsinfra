@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Reteaua - VPC, subnets, gateway, rutare
+
+Parameters:
+  VPCcidr:
+    Type: String
+    Default: "10.1.0.0/26"
+
+# what its creating:
+Resources:
+  myVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCcidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: name
+          Value: first-vpc
+        - Key: env
+          Value: production
+
+  mySubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC #attach to the VPC created above
+      CidrBlock: !Select [0, !Cidr [!GetAtt myVPC.CidrBlock, 3, 4]]
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: stack
+          Value: production
+
+  mySubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: !Select [1, !Cidr [!GetAtt myVPC.CidrBlock, 3, 4]]
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: stack
+          Value: production
+
+  mySubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: !Select [2, !Cidr [!GetAtt myVPC.CidrBlock, 3, 4]]
+      AvailabilityZone: !Select [2, !GetAZs '']
+      Tags:
+        - Key: stack
+          Value: production
+
+  myInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: stack
+          Value: production
+
+  myVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref myVPC
+      InternetGatewayId: !Ref myInternetGateway
+
+  myRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags:
+        - Key: stack
+          Value: production
+
+  myRoute:
+    Type: AWS::EC2::Route
+    DependsOn: myVPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref myRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref myInternetGateway
+
+  mySubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref mySubnet1
+      RouteTableId: !Ref myRouteTable
+
+  mySubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref mySubnet2
+      RouteTableId: !Ref myRouteTable
+
+  mySubnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref mySubnet3
+      RouteTableId: !Ref myRouteTable
+
+Outputs:
+  VPCId:
+    Value: !Ref myVPC
+    Export:
+      Name: network-vpc-id
+
+  Subnet3Id:
+    Value: !Ref mySubnet3
+    Export:
+      Name: network-subnet3-id
