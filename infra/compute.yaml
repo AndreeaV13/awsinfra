@@ -21,11 +21,15 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 5.12.234.46/32
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
 
-  Ec2Instance:
+  WebServerInstance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t3.micro
@@ -50,6 +54,6 @@ Resources:
 
 Outputs:
   InstanceId:
-    Value: !Ref Ec2Instance
+    Value: !Ref WebServerInstance
   PublicIP:
-    Value: !GetAtt Ec2Instance.PublicIp
+    Value: !GetAtt WebServerInstance.PublicIp
