@@ -32,7 +32,7 @@ Resources:
       ImageId: !Ref LatestAmiId
       KeyName: "frankfurt"
       UserData:
-        Fn::Base64: !sub |
+        Fn::Base64: !Sub |
           #!/bin/bash
           yum update -y
           yum install nginx -y
