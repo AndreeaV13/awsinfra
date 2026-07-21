@@ -31,6 +31,13 @@ Resources:
       InstanceType: t3.micro
       ImageId: !Ref LatestAmiId
       KeyName: "frankfurt"
+      UserData:
+        Fn::Base64: !sub |
+          #!/bin/bash
+          yum update -y
+          yum install nginx -y
+          systemctl start nginx
+          systemctl enable nginx
       Tags:
         - Key: Name
           Value: first-ec2-instance
