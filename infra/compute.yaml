@@ -27,6 +27,10 @@ Resources:
           ToPort: 22
           CidrIp: 5.12.234.139/32
         - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 81.196.21.110/32
+        - IpProtocol: tcp
           FromPort: 5000
           ToPort: 5000
           CidrIp: 0.0.0.0/0
