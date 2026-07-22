@@ -41,7 +41,7 @@ Resources:
           yum update -y
           yum install nginx python3 python3-pip git -y
           pip3 install flask google-generativeai boto3
-          git clone https://github.com/AndreeaV13/PROIECT.git /var/www/app
+          git clone https://github.com/AndreeaV13/awsinfra.git /var/www/app
           cd /var/www/app
           export GEMINI_API_KEY="CHEIA-TA-AICI"
           nohup python3 app.py > /var/log/flask.log 2>&1 &
