@@ -20,7 +20,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 5.12.234.139/32
+          CidrIp: 81.196.21.110/32
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
@@ -39,7 +39,8 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           yum update -y
-          yum install nginx -y
+          yum install nginx python3 python3-pip git -y
+          pip3 install flask anthropic boto3
           systemctl start nginx
           systemctl enable nginx
       Tags:
