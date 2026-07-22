@@ -49,6 +49,7 @@ jobs:
           aws cloudformation deploy \
             --template-file infra/compute.yaml \
             --stack-name compute-stack \
+            --parameter-overrides GeminiApiKey=${{ secrets.GEMINI_API_KEY }} \
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
             --region ${{ env.AWS_REGION }}
 

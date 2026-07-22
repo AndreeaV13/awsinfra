@@ -1,8 +1,10 @@
 from flask import Flask, request, render_template_string
-import anthropic
+import google.generativeai as genai
+import os
 
 app = Flask(__name__)
-client = anthropic.Anthropic(api_key="CHEIA-TA-API-AICI")
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+model = genai.GenerativeModel("gemini-flash-latest")
 
 PAGINA = """
 <html>
@@ -30,17 +32,11 @@ def chat():
     if request.method == "POST":
         intrebare = request.form["intrebare"]
         try:
-            message = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=1024,
-                messages=[
-                    {"role": "user", "content": intrebare}
-                ]
-            )
-            raspuns = message.content[0].text
+            response = model.generate_content(intrebare)
+            raspuns = response.text
         except Exception as e:
             eroare = f"Eroare: {str(e)}"
     return render_template_string(PAGINA, raspuns=raspuns, eroare=eroare)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
