@@ -51,9 +51,26 @@ Resources:
           yum install nginx python3 python3-pip git -y
           pip3 install flask google-generativeai boto3
           git clone https://github.com/AndreeaV13/awsinfra.git /var/www/app
-          cd /var/www/app
-          export GEMINI_API_KEY="${GeminiApiKey}"
-          nohup python3 app.py > /var/log/flask.log 2>&1 &
+
+          cat > /etc/systemd/system/flask.service << 'SYSTEMD_EOF'
+          [Unit]
+          Description=Flask App
+          After=network.target
+
+          [Service]
+          WorkingDirectory=/var/www/app
+          Environment="GEMINI_API_KEY=${GeminiApiKey}"
+          ExecStart=/usr/bin/python3 /var/www/app/app.py
+          Restart=always
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+          SYSTEMD_EOF
+
+          systemctl daemon-reload
+          systemctl enable flask
+          systemctl start flask
           systemctl start nginx
           systemctl enable nginx
       Tags:
