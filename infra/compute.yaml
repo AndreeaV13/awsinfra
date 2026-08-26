@@ -11,6 +11,11 @@ Parameters:
     NoEcho: true
     Description: Cheia API Gemini
 
+  SnmpCommunity:
+    Type: String
+    NoEcho: true
+    Description: Community string SNMP (v2c) pentru snmpd
+
 Resources:
   # Rol IAM pentru EC2 - permite citirea din CloudWatch
   Ec2Role:
@@ -54,6 +59,10 @@ Resources:
           FromPort: 3000
           ToPort: 3000
           CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 161
+          ToPort: 161
+          CidrIp: 10.1.0.0/26
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -71,9 +80,18 @@ Resources:
           exec > /var/log/user-data.log 2>&1
           set -e -x
           yum update -y
-          yum install nginx python3 python3-pip git -y
+          yum install nginx python3 python3-pip git net-snmp net-snmp-utils -y
           pip3 install flask google-generativeai boto3
           git clone https://github.com/AndreeaV13/awsinfra.git /var/www/app
+
+          # Configurare SNMP (net-snmp)
+          cat > /etc/snmp/snmpd.conf << SNMPD_EOF
+          rocommunity ${SnmpCommunity} 10.1.0.0/26
+          syslocation aws-eu-central-1
+          syscontact admin
+          SNMPD_EOF
+          systemctl enable snmpd
+          systemctl start snmpd
 
           # Flask ca serviciu
           cat > /etc/systemd/system/flask.service << 'SYSTEMD_EOF'
@@ -103,6 +121,7 @@ Resources:
           GRAFANA_EOF
 
           yum install grafana -y
+          grafana-cli plugins install grafana-snmp-plugin
 
           # Pornire servicii
           systemctl daemon-reload
