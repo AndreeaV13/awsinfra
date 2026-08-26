@@ -51,7 +51,7 @@ jobs:
             --template-file infra/compute.yaml \
             --capabilities CAPABILITY_IAM \
             --stack-name compute-stack \
-            --parameter-overrides GeminiApiKey=${{ secrets.GEMINI_API_KEY }} SnmpCommunity=${{ secrets.SNMP_COMMUNITY }} \
+            --parameter-overrides GeminiApiKey=${{ secrets.GEMINI_API_KEY }} \
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
             --region ${{ env.AWS_REGION }}
 
