@@ -6,8 +6,7 @@ app = Flask(__name__)
 app.secret_key = "infrapulse-secret-key-2026"
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
-# Am trecut pe o versiune strict definită și stabilă
-model = genai.GenerativeModel("sudo systemctl restart flask")
+model = genai.GenerativeModel("gemini-flash-latest")
 
 @app.route("/", methods=["GET", "POST"])
 def chat():
