@@ -7,7 +7,7 @@ app.secret_key = "infrapulse-secret-key-2026"
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 # Am trecut pe o versiune strict definită și stabilă
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-pro")
 
 @app.route("/", methods=["GET", "POST"])
 def chat():
