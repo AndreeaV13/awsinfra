@@ -5,7 +5,9 @@ import os
 app = Flask(__name__)
 app.secret_key = "infrapulse-secret-key-2026"
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-flash-latest")
+
+# Am trecut pe o versiune strict definită și stabilă
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 @app.route("/", methods=["GET", "POST"])
 def chat():
@@ -24,14 +26,16 @@ def chat():
                     conversatie.append({"role": "model", "parts": [msg["text"]]})
             conversatie.append({"role": "user", "parts": [intrebare]})
 
-            response = model.generate_content(conversatie)
+            # Am adăugat timeout de 15 secunde pentru a preveni blocajele infinite!
+            response = model.generate_content(conversatie, request_options={"timeout": 15})
             raspuns = response.text
 
             session["istoric"].append({"role": "Tu", "text": intrebare})
             session["istoric"].append({"role": "AI", "text": raspuns})
             session.modified = True
         except Exception as e:
-            eroare = f"Eroare: {str(e)}"
+            # Dacă Google nu răspunde, afișăm eroarea direct pe site, nu blocăm pagina
+            eroare = f"Eroare de conexiune API: {str(e)}"
 
     return render_template("chat.html", istoric=session.get("istoric", []), eroare=eroare)
 
