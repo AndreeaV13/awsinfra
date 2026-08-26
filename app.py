@@ -1,29 +1,11 @@
-from flask import Flask, request, render_template_string, session
+from flask import Flask, request, render_template, session
 import google.generativeai as genai
 import os
 
 app = Flask(__name__)
-app.secret_key = "orice-text-random-aici"
+app.secret_key = "infrapulse-secret-key-2026"
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 model = genai.GenerativeModel("gemini-flash-latest")
-
-PAGINA = """
-<html>
-<body>
-  <h1>Platforma mea</h1>
-  <form method="POST">
-    <input name="intrebare" placeholder="Pune o intrebare..." size="50">
-    <button type="submit">Trimite</button>
-  </form>
-  {% for msg in istoric %}
-    <p><b>{{ msg.role }}:</b> {{ msg.text }}</p>
-  {% endfor %}
-  {% if eroare %}
-    <p style="color:red">{{ eroare }}</p>
-  {% endif %}
-</body>
-</html>
-"""
 
 @app.route("/", methods=["GET", "POST"])
 def chat():
@@ -34,7 +16,6 @@ def chat():
     if request.method == "POST":
         intrebare = request.form["intrebare"]
         try:
-            # Construieste conversatia completa
             conversatie = []
             for msg in session["istoric"]:
                 if msg["role"] == "Tu":
@@ -52,7 +33,7 @@ def chat():
         except Exception as e:
             eroare = f"Eroare: {str(e)}"
 
-    return render_template_string(PAGINA, istoric=session.get("istoric", []), eroare=eroare)
+    return render_template("chat.html", istoric=session.get("istoric", []), eroare=eroare)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

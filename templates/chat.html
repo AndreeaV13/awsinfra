@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InfraPulse - SuperRobo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #2e1065 0%, #4c1d95 30%, #6d28d9 60%, #7c3aed 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      width: 100%;
+      background: rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+      padding: 14px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #a78bfa, #c4b5fd);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 20px rgba(167,139,250,0.4);
+    }
+    .logo-text {
+      color: white;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .logo-text span { color: #c4b5fd; }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.1);
+      padding: 8px 16px;
+      border-radius: 50px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #c4b5fd, #a78bfa);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: #2e1065;
+    }
+    .user-info { color: white; font-size: 13px; line-height: 1.3; }
+    .user-info .name { font-weight: 600; }
+    .user-info .role { color: #ddd6fe; font-size: 11px; }
+
+    .main {
+      width: 100%;
+      max-width: 800px;
+      padding: 30px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .welcome {
+      text-align: center;
+      margin-bottom: 24px;
+      animation: fadeInDown 0.6s ease;
+    }
+    .welcome h2 { color: white; font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+    .welcome p { color: #ddd6fe; font-size: 14px; }
+
+    .chat-container {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-header {
+      background: linear-gradient(90deg, #4c1d95, #6d28d9);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ai-dot {
+      width: 10px;
+      height: 10px;
+      background: #a78bfa;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      box-shadow: 0 0 10px rgba(167,139,250,0.6);
+    }
+    .chat-header-text { color: white; font-size: 14px; font-weight: 600; }
+    .chat-header-text span { color: #c4b5fd; font-weight: 400; font-size: 12px; }
+
+    .messages {
+      flex: 1;
+      padding: 20px 24px;
+      overflow-y: auto;
+      max-height: 500px;
+    }
+
+    .msg { margin-bottom: 16px; animation: messageIn 0.4s ease; }
+
+    .msg-user { display: flex; justify-content: flex-end; }
+    .msg-user .bubble {
+      background: linear-gradient(135deg, #4c1d95, #6d28d9);
+      color: white;
+      padding: 14px 18px;
+      border-radius: 18px 18px 4px 18px;
+      max-width: 75%;
+      font-size: 14px;
+      line-height: 1.5;
+      box-shadow: 0 4px 15px rgba(76,29,149,0.3);
+    }
+
+    .msg-ai { display: flex; justify-content: flex-start; gap: 10px; }
+    .msg-ai .ai-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 0 15px rgba(124,58,237,0.3);
+    }
+    .msg-ai .bubble {
+      background: linear-gradient(135deg, #faf5ff, #f5f3ff);
+      color: #1f2937;
+      padding: 14px 18px;
+      border-radius: 18px 18px 18px 4px;
+      max-width: 75%;
+      font-size: 14px;
+      line-height: 1.6;
+      border: 1px solid #e9d5ff;
+      position: relative;
+      overflow: hidden;
+    }
+    .msg-ai .bubble::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 40%,
+        rgba(139,92,246,0.06) 45%,
+        rgba(139,92,246,0.1) 50%,
+        rgba(139,92,246,0.06) 55%,
+        transparent 60%
+      );
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    .msg-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+    .msg-user .msg-label { color: #c4b5fd; text-align: right; }
+    .msg-ai .msg-label { color: #7c3aed; }
+
+    .input-area {
+      padding: 16px 24px;
+      background: #faf8ff;
+      border-top: 1px solid #e5e7eb;
+    }
+    .input-form { display: flex; gap: 10px; }
+    .input-form input {
+      flex: 1;
+      padding: 14px 20px;
+      border: 2px solid #e9d5ff;
+      border-radius: 14px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: all 0.3s;
+      background: white;
+    }
+    .input-form input:focus {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 4px rgba(139,92,246,0.1);
+    }
+    .input-form button {
+      background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(124,58,237,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .input-form button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(124,58,237,0.4);
+    }
+    .input-form button::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+      animation: shimmer 2s ease-in-out infinite;
+    }
+
+    .eroare {
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border-left: 4px solid #ef4444;
+      margin: 12px 24px;
+      font-size: 13px;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: rgba(255,255,255,0.4);
+      font-size: 12px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: #9ca3af;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; color: #6b7280; }
+    .empty-state .hint { font-size: 13px; color: #9ca3af; margin-top: 6px; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.2); }
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) rotate(0deg); }
+      100% { transform: translateX(100%) rotate(0deg); }
+    }
+    @keyframes messageIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">&#x26A1;</div>
+      <div class="logo-text">Infra<span>Pulse</span></div>
+    </div>
+    <div class="user-badge">
+      <div class="user-avatar">AG</div>
+      <div class="user-info">
+        <div class="name">Voinea Andreea-Gabriela</div>
+        <div class="role">Automatica si Calculatoare &middot; UPB</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="welcome">
+      <h2>&#x1F916; InfraPulse AI</h2>
+      <p>Asistent inteligent pentru monitorizare infrastructura cloud</p>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="ai-dot"></div>
+        <div class="chat-header-text">
+          SuperRobo <span>&middot; online</span>
+        </div>
+      </div>
+
+      <div class="messages">
+        {% if not istoric %}
+          <div class="empty-state">
+            <div class="icon">&#x1F916;</div>
+            <p>Salut! Sunt SuperRobo, asistentul tau AI</p>
+            <div class="hint">Intreaba-ma orice despre infrastructura cloud</div>
+          </div>
+        {% endif %}
+
+        {% for msg in istoric %}
+          {% if msg.role == "Tu" %}
+            <div class="msg msg-user">
+              <div>
+                <div class="msg-label">Tu</div>
+                <div class="bubble">{{ msg.text }}</div>
+              </div>
+            </div>
+          {% else %}
+            <div class="msg msg-ai">
+              <div class="ai-avatar">&#x1F916;</div>
+              <div>
+                <div class="msg-label">SuperRobo</div>
+                <div class="bubble">{{ msg.text }}</div>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      {% if eroare %}
+        <div class="eroare">{{ eroare }}</div>
+      {% endif %}
+
+      <div class="input-area">
+        <form method="POST" class="input-form">
+          <input name="intrebare" placeholder="Intreaba-l pe SuperRobo..." autocomplete="off" autofocus>
+          <button type="submit">Trimite &#x2728;</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    InfraPulse &copy; 2026 &middot; Voinea Andreea-Gabriela &middot; Practica Superbet &middot; UPB ACS
+  </div>
+</body>
+</html>
