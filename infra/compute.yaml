@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Server EC2 cu security group
+Description: Server EC2 cu Flask, Grafana si monitoring
 
 Parameters:
   LatestAmiId:
@@ -12,10 +12,30 @@ Parameters:
     Description: Cheia API Gemini
 
 Resources:
+  # Rol IAM pentru EC2 - permite citirea din CloudWatch
+  Ec2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess
+
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref Ec2Role
+
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow SSH and ICMP
+      GroupDescription: Allow SSH, Flask, Grafana
       VpcId: !ImportValue network-vpc-id
       SecurityGroupIngress:
         - IpProtocol: icmp
@@ -30,6 +50,10 @@ Resources:
           FromPort: 5000
           ToPort: 5000
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -40,6 +64,7 @@ Resources:
       InstanceType: t3.micro
       ImageId: !Ref LatestAmiId
       KeyName: "frankfurt"
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -50,6 +75,7 @@ Resources:
           pip3 install flask google-generativeai boto3
           git clone https://github.com/AndreeaV13/awsinfra.git /var/www/app
 
+          # Flask ca serviciu
           cat > /etc/systemd/system/flask.service << 'SYSTEMD_EOF'
           [Unit]
           Description=Flask App
@@ -66,9 +92,24 @@ Resources:
           WantedBy=multi-user.target
           SYSTEMD_EOF
 
+          # Instalare Grafana
+          cat > /etc/yum.repos.d/grafana.repo << 'GRAFANA_EOF'
+          [grafana]
+          name=grafana
+          baseurl=https://rpm.grafana.com
+          repo_gpgcheck=0
+          enabled=1
+          gpgcheck=0
+          GRAFANA_EOF
+
+          yum install grafana -y
+
+          # Pornire servicii
           systemctl daemon-reload
           systemctl enable flask
           systemctl start flask
+          systemctl enable grafana-server
+          systemctl start grafana-server
           systemctl start nginx
           systemctl enable nginx
       Tags:
