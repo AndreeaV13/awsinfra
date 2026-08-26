@@ -39,6 +39,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infra/network.yaml \
+            --capabilities CAPABILITY_IAM \
             --stack-name network-stack \
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
             --region ${{ env.AWS_REGION }}
@@ -48,6 +49,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infra/compute.yaml \
+            --capabilities CAPABILITY_IAM \
             --stack-name compute-stack \
             --parameter-overrides GeminiApiKey=${{ secrets.GEMINI_API_KEY }} \
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
@@ -58,6 +60,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infra/site.yaml \
+            --capabilities CAPABILITY_IAM \
             --stack-name site-stack \
             --parameter-overrides ProjectName=${{ env.PROJECT_NAME }} \
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
