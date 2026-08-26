@@ -29,6 +29,10 @@ Resources:
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: 0.0.0.0/0
 
   WebServerInstance:
     Type: AWS::EC2::Instance
