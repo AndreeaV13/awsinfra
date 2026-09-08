@@ -44,7 +44,16 @@ jobs:
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
             --region ${{ env.AWS_REGION }}
 
-      # STACK 2: Serverul (security group, EC2)
+      # STACK 2: Elastic IP fix (ramane acelasi la fiecare recreare)
+      - name: Deploy elastic-ip stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/elastic-ip.yaml \
+            --stack-name elastic-ip-stack \
+            --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
+            --region ${{ env.AWS_REGION }}
+
+      # STACK 3: Serverul (security group, EC2)
       - name: Deploy compute stack
         run: |
           aws cloudformation deploy \
@@ -55,7 +64,7 @@ jobs:
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
             --region ${{ env.AWS_REGION }}
 
-      # STACK 3: Site-ul static (S3, CloudFront)
+      # STACK 4: Site-ul static (S3, CloudFront)
       - name: Deploy site stack
         run: |
           aws cloudformation deploy \

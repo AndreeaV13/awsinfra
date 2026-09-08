@@ -234,8 +234,14 @@ Resources:
             - !Ref InstanceSecurityGroup
           SubnetId: !ImportValue network-subnet3-id
 
+  EIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !ImportValue elastic-ip-allocation-id
+      InstanceId: !Ref WebServerInstance
+
 Outputs:
   InstanceId:
     Value: !Ref WebServerInstance
   PublicIP:
-    Value: !GetAtt WebServerInstance.PublicIp
+    Value: !ImportValue elastic-ip-address
