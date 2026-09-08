@@ -211,7 +211,7 @@ Resources:
           mkdir -p /var/lib/grafana/dashboards
           wget -O /var/lib/grafana/dashboards/node-exporter-full.json \
             https://grafana.com/api/dashboards/1860/revisions/37/download
-          sed -i 's/$${DS_PROMETHEUS}/Prometheus/g' /var/lib/grafana/dashboards/node-exporter-full.json
+          sed -i 's/${!DS_PROMETHEUS}/Prometheus/g' /var/lib/grafana/dashboards/node-exporter-full.json
 
           chown -R grafana:grafana /var/lib/grafana/dashboards
 
