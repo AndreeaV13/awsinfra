@@ -1,12 +1,12 @@
-from flask import Flask, request, render_template, session
-import google.generativeai as genai
+from flask import Flask, request as flask_request, render_template, session
+import requests
 import os
 
 app = Flask(__name__)
 app.secret_key = "infrapulse-secret-key-2026"
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
-model = genai.GenerativeModel("gemini-flash-latest")
+API_KEY = os.environ.get("GEMINI_API_KEY")
+API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" + str(API_KEY)
 
 @app.route("/", methods=["GET", "POST"])
 def chat():
@@ -14,27 +14,29 @@ def chat():
     if "istoric" not in session:
         session["istoric"] = []
 
-    if request.method == "POST":
-        intrebare = request.form["intrebare"]
+    if flask_request.method == "POST":
+        intrebare = flask_request.form["intrebare"]
         try:
             conversatie = []
             for msg in session["istoric"]:
                 if msg["role"] == "Tu":
-                    conversatie.append({"role": "user", "parts": [msg["text"]]})
+                    conversatie.append({"role": "user", "parts": [{"text": msg["text"]}]})
                 else:
-                    conversatie.append({"role": "model", "parts": [msg["text"]]})
-            conversatie.append({"role": "user", "parts": [intrebare]})
+                    conversatie.append({"role": "model", "parts": [{"text": msg["text"]}]})
+            conversatie.append({"role": "user", "parts": [{"text": intrebare}]})
 
-            # Am adăugat timeout de 15 secunde pentru a preveni blocajele infinite!
-            response = model.generate_content(conversatie, request_options={"timeout": 15})
-            raspuns = response.text
+            resp = requests.post(API_URL, json={"contents": conversatie}, timeout=60)
+            data = resp.json()
 
-            session["istoric"].append({"role": "Tu", "text": intrebare})
-            session["istoric"].append({"role": "AI", "text": raspuns})
-            session.modified = True
+            if "candidates" in data:
+                raspuns = data["candidates"][0]["content"]["parts"][0]["text"]
+                session["istoric"].append({"role": "Tu", "text": intrebare})
+                session["istoric"].append({"role": "AI", "text": raspuns})
+                session.modified = True
+            else:
+                eroare = "Eroare API: " + data.get("error", {}).get("message", "necunoscuta")
         except Exception as e:
-            # Dacă Google nu răspunde, afișăm eroarea direct pe site, nu blocăm pagina
-            eroare = f"Eroare de conexiune API: {str(e)}"
+            eroare = "Eroare: " + str(e)
 
     return render_template("chat.html", istoric=session.get("istoric", []), eroare=eroare)
 
