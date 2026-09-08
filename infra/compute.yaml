@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Server EC2 cu Flask, Grafana si monitoring
+Description: Server EC2 cu Flask, Prometheus, Node Exporter si Grafana (provisioned)
 
 Parameters:
   LatestAmiId:
@@ -12,7 +12,6 @@ Parameters:
     Description: Cheia API Gemini
 
 Resources:
-  # Rol IAM pentru EC2 - permite citirea din CloudWatch
   Ec2Role:
     Type: AWS::IAM::Role
     Properties:
@@ -35,7 +34,7 @@ Resources:
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow SSH, Flask, Grafana
+      GroupDescription: Allow SSH, Flask, Grafana, Prometheus, Node Exporter
       VpcId: !ImportValue network-vpc-id
       SecurityGroupIngress:
         - IpProtocol: icmp
@@ -54,6 +53,14 @@ Resources:
           FromPort: 3000
           ToPort: 3000
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9090
+          ToPort: 9090
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9100
+          ToPort: 9100
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -70,12 +77,15 @@ Resources:
           #!/bin/bash
           exec > /var/log/user-data.log 2>&1
           set -e -x
+
+          # === SISTEM ===
           yum update -y
-          yum install nginx python3 python3-pip git -y
-          pip3 install flask google-generativeai boto3
+          yum install nginx python3 python3-pip git stress wget -y
+          pip3 install flask requests boto3
+
+          # === FLASK APP ===
           git clone https://github.com/AndreeaV13/awsinfra.git /var/www/app
 
-          # Flask ca serviciu
           cat > /etc/systemd/system/flask.service << 'SYSTEMD_EOF'
           [Unit]
           Description=Flask App
@@ -92,26 +102,127 @@ Resources:
           WantedBy=multi-user.target
           SYSTEMD_EOF
 
-          # Instalare Grafana
-          cat > /etc/yum.repos.d/grafana.repo << 'GRAFANA_EOF'
+          # === NODE EXPORTER ===
+          useradd -rs /bin/false node_exporter || true
+          cd /tmp
+          wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+          tar -xf node_exporter-1.8.2.linux-amd64.tar.gz
+          mv node_exporter-1.8.2.linux-amd64/node_exporter /usr/local/bin/
+          rm -rf node_exporter-1.8.2.linux-amd64*
+
+          cat > /etc/systemd/system/node_exporter.service << 'NE_EOF'
+          [Unit]
+          Description=Node Exporter
+          After=network.target
+
+          [Service]
+          User=node_exporter
+          Group=node_exporter
+          Type=simple
+          ExecStart=/usr/local/bin/node_exporter
+
+          [Install]
+          WantedBy=multi-user.target
+          NE_EOF
+
+          # === PROMETHEUS ===
+          useradd -rs /bin/false prometheus || true
+          mkdir -p /etc/prometheus /var/lib/prometheus
+          cd /tmp
+          wget https://github.com/prometheus/prometheus/releases/download/v2.53.0/prometheus-2.53.0.linux-amd64.tar.gz
+          tar -xf prometheus-2.53.0.linux-amd64.tar.gz
+          mv prometheus-2.53.0.linux-amd64/prometheus prometheus-2.53.0.linux-amd64/promtool /usr/local/bin/
+          mv prometheus-2.53.0.linux-amd64/consoles prometheus-2.53.0.linux-amd64/console_libraries /etc/prometheus/
+          rm -rf prometheus-2.53.0.linux-amd64*
+
+          cat > /etc/prometheus/prometheus.yml << 'PROM_EOF'
+          global:
+            scrape_interval: 15s
+
+          scrape_configs:
+            - job_name: 'node_exporter'
+              static_configs:
+                - targets: ['localhost:9100']
+          PROM_EOF
+
+          chown -R prometheus: /etc/prometheus /var/lib/prometheus
+
+          cat > /etc/systemd/system/prometheus.service << 'PS_EOF'
+          [Unit]
+          Description=Prometheus
+          After=network.target
+
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/prometheus \
+            --config.file /etc/prometheus/prometheus.yml \
+            --storage.tsdb.path /var/lib/prometheus/ \
+            --web.console.templates=/etc/prometheus/consoles \
+            --web.console.libraries=/etc/prometheus/console_libraries
+
+          [Install]
+          WantedBy=multi-user.target
+          PS_EOF
+
+          # === GRAFANA - INSTALARE ===
+          cat > /etc/yum.repos.d/grafana.repo << 'GR_EOF'
           [grafana]
           name=grafana
           baseurl=https://rpm.grafana.com
           repo_gpgcheck=0
           enabled=1
           gpgcheck=0
-          GRAFANA_EOF
+          GR_EOF
 
           yum install grafana -y
 
-          # Pornire servicii
+          # === GRAFANA - PROVISIONING SURSA DE DATE (automat, fara sa mai adaugi manual) ===
+          mkdir -p /etc/grafana/provisioning/datasources
+          cat > /etc/grafana/provisioning/datasources/prometheus.yml << 'DS_EOF'
+          apiVersion: 1
+
+          datasources:
+            - name: Prometheus
+              type: prometheus
+              access: proxy
+              url: http://localhost:9090
+              isDefault: true
+              editable: true
+          DS_EOF
+
+          # === GRAFANA - PROVISIONING DASHBOARD (descarca automat Node Exporter Full) ===
+          mkdir -p /etc/grafana/provisioning/dashboards
+          cat > /etc/grafana/provisioning/dashboards/default.yml << 'DB_PROV_EOF'
+          apiVersion: 1
+
+          providers:
+            - name: 'default'
+              orgId: 1
+              folder: ''
+              type: file
+              disableDeletion: false
+              updateIntervalSeconds: 30
+              options:
+                path: /var/lib/grafana/dashboards
+          DB_PROV_EOF
+
+          mkdir -p /var/lib/grafana/dashboards
+          wget -O /var/lib/grafana/dashboards/node-exporter-full.json \
+            https://grafana.com/api/dashboards/1860/revisions/37/download
+
+          chown -R grafana:grafana /var/lib/grafana/dashboards
+
+          # === PORNIRE SERVICII ===
           systemctl daemon-reload
-          systemctl enable flask
-          systemctl start flask
-          systemctl enable grafana-server
-          systemctl start grafana-server
-          systemctl start nginx
-          systemctl enable nginx
+          systemctl enable node_exporter && systemctl start node_exporter
+          systemctl enable prometheus && systemctl start prometheus
+          systemctl enable grafana-server && systemctl start grafana-server
+          systemctl enable flask && systemctl start flask
+          systemctl enable nginx && systemctl start nginx
+
+          echo "=== SETUP COMPLET ===" >> /var/log/user-data.log
       Tags:
         - Key: Name
           Value: first-ec2-instance
