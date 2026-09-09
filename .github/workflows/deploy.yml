@@ -12,6 +12,7 @@ env:
   AWS_REGION: eu-central-1
   PROJECT_NAME: primul-meu-site
   BUCKET_NAME: primul-meu-site-616077259946-eu-central-1
+  ARTIFACTS_BUCKET: cfn-artifacts-616077259946-eu-central-1
 
 jobs:
   deploy:
@@ -34,44 +35,35 @@ jobs:
             echo "environment=staging" >> "$GITHUB_OUTPUT"
           fi
 
-      # STACK 1: Reteaua (VPC, subnet-uri, gateway, rutare)
-      - name: Deploy network stack
+      # Bucket pentru template-urile nested (trebuie sa existe inaintea 'package')
+      - name: Deploy artifacts bucket (bootstrap)
         run: |
           aws cloudformation deploy \
-            --template-file infra/network.yaml \
-            --capabilities CAPABILITY_IAM \
-            --stack-name network-stack \
+            --template-file infra/artifacts-bucket.yaml \
+            --stack-name cfn-artifacts-stack \
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
             --region ${{ env.AWS_REGION }}
 
-      # STACK 2: Elastic IP fix (ramane acelasi la fiecare recreare)
-      - name: Deploy elastic-ip stack
+      # Incarca network.yaml, elastic-ip.yaml, compute.yaml, site.yaml pe S3
+      # si rescrie TemplateURL din main.yaml cu locatiile lor
+      - name: Package nested stack templates
         run: |
-          aws cloudformation deploy \
-            --template-file infra/elastic-ip.yaml \
-            --stack-name elastic-ip-stack \
-            --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
+          aws cloudformation package \
+            --template-file infra/main.yaml \
+            --s3-bucket ${{ env.ARTIFACTS_BUCKET }} \
+            --s3-prefix cfn-templates \
+            --output-template-file packaged-main.yaml \
             --region ${{ env.AWS_REGION }}
 
-      # STACK 3: Serverul (security group, EC2)
-      - name: Deploy compute stack
+      # STACK unic: network + elastic-ip + compute + site, ca nested stacks.
+      # CloudFormation deduce ordinea din GetAtt si face deploy/rollback atomic pentru toate.
+      - name: Deploy infra stack (nested: network, elastic-ip, compute, site)
         run: |
           aws cloudformation deploy \
-            --template-file infra/compute.yaml \
+            --template-file packaged-main.yaml \
             --capabilities CAPABILITY_IAM \
-            --stack-name compute-stack \
-            --parameter-overrides GeminiApiKey=${{ secrets.GEMINI_API_KEY }} \
-            --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
-            --region ${{ env.AWS_REGION }}
-
-      # STACK 4: Site-ul static (S3, CloudFront)
-      - name: Deploy site stack
-        run: |
-          aws cloudformation deploy \
-            --template-file infra/site.yaml \
-            --capabilities CAPABILITY_IAM \
-            --stack-name site-stack \
-            --parameter-overrides ProjectName=${{ env.PROJECT_NAME }} \
+            --stack-name infra-stack \
+            --parameter-overrides GeminiApiKey=${{ secrets.GEMINI_API_KEY }} ProjectName=${{ env.PROJECT_NAME }} \
             --tags Environment=${{ steps.envtag.outputs.environment }} Owner=${{ github.actor }} \
             --region ${{ env.AWS_REGION }}
 
@@ -84,7 +76,7 @@ jobs:
       - name: Invalidate CloudFront cache
         run: |
           DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-            --stack-name site-stack \
+            --stack-name infra-stack \
             --region ${{ env.AWS_REGION }} \
             --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
             --output text)

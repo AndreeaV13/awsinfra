@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Stack parinte - orchestreaza network, elastic-ip, compute si site ca nested stacks.
+  CloudFormation deduce ordinea de dependente din referintele GetAtt de mai jos si
+  trateaza tot deploy-ul ca o singura tranzactie (fara Export/ImportValue intre stack-uri
+  separate si fara risc de stack orfan in ROLLBACK_COMPLETE).
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: primul-meu-site
+
+  GeminiApiKey:
+    Type: String
+    NoEcho: true
+    Description: Cheia API Gemini
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: network.yaml
+
+  ElasticIpStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: elastic-ip.yaml
+
+  ComputeStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: compute.yaml
+      Parameters:
+        VpcId: !GetAtt NetworkStack.Outputs.VPCId
+        Subnet3Id: !GetAtt NetworkStack.Outputs.Subnet3Id
+        ElasticIpAllocationId: !GetAtt ElasticIpStack.Outputs.ElasticIPAllocationId
+        ElasticIpAddress: !GetAtt ElasticIpStack.Outputs.ElasticIPAddress
+        GeminiApiKey: !Ref GeminiApiKey
+
+  SiteStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: site.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+
+Outputs:
+  InstanceId:
+    Value: !GetAtt ComputeStack.Outputs.InstanceId
+  PublicIP:
+    Value: !GetAtt ComputeStack.Outputs.PublicIP
+  BucketName:
+    Value: !GetAtt SiteStack.Outputs.BucketName
+  DistributionId:
+    Value: !GetAtt SiteStack.Outputs.DistributionId
+  SiteURL:
+    Value: !GetAtt SiteStack.Outputs.SiteURL

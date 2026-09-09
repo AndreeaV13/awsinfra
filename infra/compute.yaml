@@ -11,6 +11,22 @@ Parameters:
     NoEcho: true
     Description: Cheia API Gemini
 
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC din network stack (primit ca parametru, nu mai importam export)
+
+  Subnet3Id:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet din network stack
+
+  ElasticIpAllocationId:
+    Type: String
+    Description: AllocationId al elastic-ip-stack
+
+  ElasticIpAddress:
+    Type: String
+    Description: Adresa elastic-ip-stack
+
 Resources:
   Ec2Role:
     Type: AWS::IAM::Role
@@ -35,7 +51,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow SSH, Flask, Grafana, Prometheus, Node Exporter
-      VpcId: !ImportValue network-vpc-id
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: icmp
           FromPort: -1
@@ -232,16 +248,16 @@ Resources:
           DeviceIndex: "0"
           GroupSet:
             - !Ref InstanceSecurityGroup
-          SubnetId: !ImportValue network-subnet3-id
+          SubnetId: !Ref Subnet3Id
 
   EIPAssociation:
     Type: AWS::EC2::EIPAssociation
     Properties:
-      AllocationId: !ImportValue elastic-ip-allocation-id
+      AllocationId: !Ref ElasticIpAllocationId
       InstanceId: !Ref WebServerInstance
 
 Outputs:
   InstanceId:
     Value: !Ref WebServerInstance
   PublicIP:
-    Value: !ImportValue elastic-ip-address
+    Value: !Ref ElasticIpAddress

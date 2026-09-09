@@ -13,10 +13,6 @@ Resources:
 Outputs:
   ElasticIPAllocationId:
     Value: !GetAtt MyElasticIP.AllocationId
-    Export:
-      Name: elastic-ip-allocation-id
 
   ElasticIPAddress:
     Value: !Ref MyElasticIP
-    Export:
-      Name: elastic-ip-address

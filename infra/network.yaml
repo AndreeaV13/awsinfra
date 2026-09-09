@@ -100,10 +100,6 @@ Resources:
 Outputs:
   VPCId:
     Value: !Ref myVPC
-    Export:
-      Name: network-vpc-id
 
   Subnet3Id:
     Value: !Ref mySubnet3
-    Export:
-      Name: network-subnet3-id
