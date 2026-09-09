@@ -57,7 +57,7 @@ jobs:
 
       # STACK unic: network + elastic-ip + compute + site, ca nested stacks.
       # CloudFormation deduce ordinea din GetAtt si face deploy/rollback atomic pentru toate.
-      - name: Deploy infra stack (nested: network, elastic-ip, compute, site)
+      - name: "Deploy infra stack (nested: network, elastic-ip, compute, site)"
         run: |
           aws cloudformation deploy \
             --template-file packaged-main.yaml \
