@@ -1,9 +1,12 @@
 from flask import Flask, request as flask_request, render_template, session
+from prometheus_flask_exporter import PrometheusMetrics
 import requests
 import os
 
 app = Flask(__name__)
 app.secret_key = "infrapulse-secret-key-2026"
+
+metrics = PrometheusMetrics(app)
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" + str(API_KEY)
