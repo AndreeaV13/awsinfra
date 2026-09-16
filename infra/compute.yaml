@@ -318,6 +318,27 @@ Resources:
       AllocationId: !GetAtt MyElasticIP.AllocationId
       InstanceId: !Ref WebServerInstance
 
+  InstanceDownAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: infra-server-status-check-failed
+      AlarmDescription: Instanta EC2 nu raspunde la status check (server posibil oprit/cazut)
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_Instance
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref WebServerInstance
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: breaching
+      AlarmActions:
+        - !Ref ServerAlertsTopic
+      OKActions:
+        - !Ref ServerAlertsTopic
+
 Outputs:
   InstanceId:
     Value: !Ref WebServerInstance
