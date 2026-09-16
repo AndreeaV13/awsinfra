@@ -20,6 +20,19 @@ Parameters:
     Description: Subnet din network stack
 
 Resources:
+  ServerAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: server-alerts
+      DisplayName: server-alerts
+
+  ServerAlertsSmsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref ServerAlertsTopic
+      Protocol: sms
+      Endpoint: "+40771728454"
+
   MyElasticIP:
     Type: AWS::EC2::EIP
     Properties:
@@ -310,3 +323,5 @@ Outputs:
     Value: !Ref WebServerInstance
   PublicIP:
     Value: !Ref MyElasticIP
+  ServerAlertsTopicArn:
+    Value: !Ref ServerAlertsTopic
