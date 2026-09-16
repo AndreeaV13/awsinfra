@@ -26,12 +26,12 @@ Resources:
       TopicName: server-alerts
       DisplayName: server-alerts
 
-  ServerAlertsSmsSubscription:
+  ServerAlertsEmailSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       TopicArn: !Ref ServerAlertsTopic
-      Protocol: sms
-      Endpoint: "+40771728454"
+      Protocol: email
+      Endpoint: "andreeavoinea25@gmail.com"
 
   MyElasticIP:
     Type: AWS::EC2::EIP
