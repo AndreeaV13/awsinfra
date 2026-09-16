@@ -355,9 +355,9 @@
       {% endif %}
 
       <div class="input-area">
-        <form method="POST" class="input-form">
-          <input name="intrebare" placeholder="Intreaba-l pe SuperRobo..." autocomplete="off" autofocus>
-          <button type="submit">Trimite &#x2728;</button>
+        <form id="chat-form" method="POST" class="input-form">
+          <input id="chat-input" name="intrebare" placeholder="Intreaba-l pe SuperRobo..." autocomplete="off" autofocus>
+          <button id="chat-submit" type="submit">Trimite &#x2728;</button>
         </form>
       </div>
     </div>
@@ -366,5 +366,101 @@
   <div class="footer">
     InfraPulse &copy; 2026 &middot; Voinea Andreea-Gabriela &middot; Practica Superbet &middot; UPB ACS
   </div>
+
+  <script>
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('chat-input');
+    const submitBtn = document.getElementById('chat-submit');
+    const messages = document.querySelector('.messages');
+
+    function scrollToBottom() {
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function removeEmptyState() {
+      const empty = messages.querySelector('.empty-state');
+      if (empty) empty.remove();
+    }
+
+    function addUserBubble(text) {
+      removeEmptyState();
+      const div = document.createElement('div');
+      div.className = 'msg msg-user';
+      div.innerHTML = '<div><div class="msg-label">Tu</div><div class="bubble"></div></div>';
+      div.querySelector('.bubble').textContent = text;
+      messages.appendChild(div);
+      scrollToBottom();
+    }
+
+    function addTypingBubble() {
+      const div = document.createElement('div');
+      div.className = 'msg msg-ai';
+      div.id = 'typing-indicator';
+      div.innerHTML = '<div class="ai-avatar">&#x1F916;</div><div><div class="msg-label">SuperRobo</div><div class="bubble">...</div></div>';
+      messages.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    function addAiBubble(text) {
+      const div = document.createElement('div');
+      div.className = 'msg msg-ai';
+      div.innerHTML = '<div class="ai-avatar">&#x1F916;</div><div><div class="msg-label">SuperRobo</div><div class="bubble"></div></div>';
+      div.querySelector('.bubble').textContent = text;
+      messages.appendChild(div);
+      scrollToBottom();
+    }
+
+    function showError(text) {
+      let box = document.querySelector('.eroare');
+      if (!box) {
+        box = document.createElement('div');
+        box.className = 'eroare';
+        form.parentElement.insertAdjacentElement('beforebegin', box);
+      }
+      box.textContent = text;
+    }
+
+    function clearError() {
+      const box = document.querySelector('.eroare');
+      if (box) box.remove();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const intrebare = input.value.trim();
+      if (!intrebare) return;
+
+      clearError();
+      addUserBubble(intrebare);
+      input.value = '';
+      input.disabled = true;
+      submitBtn.disabled = true;
+      const typing = addTypingBubble();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ intrebare })
+        });
+        const data = await res.json();
+        typing.remove();
+
+        if (res.ok && data.raspuns) {
+          addAiBubble(data.raspuns);
+        } else {
+          showError(data.eroare || 'Eroare necunoscuta');
+        }
+      } catch (err) {
+        typing.remove();
+        showError('Eroare de retea: ' + err.message);
+      } finally {
+        input.disabled = false;
+        submitBtn.disabled = false;
+        input.focus();
+      }
+    });
+  </script>
 </body>
 </html>
