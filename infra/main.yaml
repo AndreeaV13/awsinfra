@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Stack parinte - orchestreaza network, elastic-ip, compute si site ca nested stacks.
+  Stack parinte - orchestreaza network, compute (include si Elastic IP) si site ca nested stacks.
   CloudFormation deduce ordinea de dependente din referintele GetAtt de mai jos si
   trateaza tot deploy-ul ca o singura tranzactie (fara Export/ImportValue intre stack-uri
   separate si fara risc de stack orfan in ROLLBACK_COMPLETE).
@@ -21,11 +21,6 @@ Resources:
     Properties:
       TemplateURL: network.yaml
 
-  ElasticIpStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: elastic-ip.yaml
-
   ComputeStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -33,8 +28,6 @@ Resources:
       Parameters:
         VpcId: !GetAtt NetworkStack.Outputs.VPCId
         Subnet3Id: !GetAtt NetworkStack.Outputs.Subnet3Id
-        ElasticIpAllocationId: !GetAtt ElasticIpStack.Outputs.ElasticIPAllocationId
-        ElasticIpAddress: !GetAtt ElasticIpStack.Outputs.ElasticIPAddress
         GeminiApiKey: !Ref GeminiApiKey
 
   SiteStack:

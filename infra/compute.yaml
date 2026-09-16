@@ -19,15 +19,15 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
     Description: Subnet din network stack
 
-  ElasticIpAllocationId:
-    Type: String
-    Description: AllocationId al elastic-ip-stack
-
-  ElasticIpAddress:
-    Type: String
-    Description: Adresa elastic-ip-stack
-
 Resources:
+  MyElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: infrapulse-eip
+
   Ec2Role:
     Type: AWS::IAM::Role
     Properties:
@@ -302,11 +302,11 @@ Resources:
   EIPAssociation:
     Type: AWS::EC2::EIPAssociation
     Properties:
-      AllocationId: !Ref ElasticIpAllocationId
+      AllocationId: !GetAtt MyElasticIP.AllocationId
       InstanceId: !Ref WebServerInstance
 
 Outputs:
   InstanceId:
     Value: !Ref WebServerInstance
   PublicIP:
-    Value: !Ref ElasticIpAddress
+    Value: !Ref MyElasticIP
